@@ -67,44 +67,77 @@ const FoodDetails: React.FC = () => {
   const [foodQuantity, setFoodQuantity] = useState(1);
 
   const navigation = useNavigation();
-  const route = useRoute();
+  const { params } = useRoute();
 
-  const routeParams = route.params as Params;
+  const routeParams = params as Params;
 
   useEffect(() => {
     async function loadFood(): Promise<void> {
-      // Load a specific food with extras based on routeParams id
-    }
+      const { id } = routeParams;
+      const response = await api.get<Food>(`foods/${id}`);
+      const { extras: foodExtras } = response.data;
 
+      setFood({
+        ...response.data,
+        formattedPrice: formatValue(response.data.price),
+      });
+
+      setExtras(foodExtras.map(extra => ({ ...extra, quantity: 0 })));
+    }
     loadFood();
   }, [routeParams]);
 
   function handleIncrementExtra(id: number): void {
-    // Increment extra quantity
+    setExtras(extrasData =>
+      extrasData.map(data =>
+        data.id === id ? { ...data, quantity: data.quantity + 1 } : data,
+      ),
+    );
   }
 
   function handleDecrementExtra(id: number): void {
-    // Decrement extra quantity
+    setExtras(extrasData =>
+      extrasData.map(data =>
+        data.id === id && data.quantity > 0
+          ? { ...data, quantity: data.quantity - 1 }
+          : data,
+      ),
+    );
   }
 
   function handleIncrementFood(): void {
-    // Increment food quantity
+    setFoodQuantity(quantityCurrent => quantityCurrent + 1);
   }
 
   function handleDecrementFood(): void {
-    // Decrement food quantity
+    setFoodQuantity(quantityCurrent =>
+      quantityCurrent > 1 ? quantityCurrent - 1 : quantityCurrent,
+    );
   }
 
   const toggleFavorite = useCallback(() => {
-    // Toggle if food is favorite or not
-  }, [isFavorite, food]);
+    setIsFavorite(data => !data);
+  }, []);
 
   const cartTotal = useMemo(() => {
-    // Calculate cartTotal
+    const extraTotal = extras.reduce((total, valueCurrent) => {
+      return total + valueCurrent.value * valueCurrent.quantity;
+    }, 0);
+    // por que para Veggie e A la Camarón o price veio como string?
+    return formatValue((extraTotal + Number(food.price)) * foodQuantity);
   }, [extras, food, foodQuantity]);
 
   async function handleFinishOrder(): Promise<void> {
-    // Finish the order and save on the API
+    // const { id, name, description, image_url } = food;
+    // const dataExtras = extras;
+    // await api.post('orders', {
+    //   id,
+    //   name,
+    //   description,
+    //   price: cartTotal,
+    //   image_url,
+    //   extras: dataExtras,
+    // });
   }
 
   // Calculate the correct icon name
@@ -115,6 +148,7 @@ const FoodDetails: React.FC = () => {
 
   useLayoutEffect(() => {
     // Add the favorite icon on the right of the header bar
+
     navigation.setOptions({
       headerRight: () => (
         <MaterialIcon

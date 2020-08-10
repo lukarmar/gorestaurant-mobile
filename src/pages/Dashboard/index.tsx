@@ -43,6 +43,11 @@ interface Category {
   image_url: string;
 }
 
+interface ParamsFood {
+  category_like?: number;
+  name_like?: string;
+}
+
 const Dashboard: React.FC = () => {
   const [foods, setFoods] = useState<Food[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -51,30 +56,52 @@ const Dashboard: React.FC = () => {
   >();
   const [searchValue, setSearchValue] = useState('');
 
-  const navigation = useNavigation();
+  const { navigate } = useNavigation();
 
   async function handleNavigate(id: number): Promise<void> {
-    // Navigate do ProductDetails page
+    navigate('FoodDetails', { id });
   }
 
   useEffect(() => {
     async function loadFoods(): Promise<void> {
-      // Load Foods from API
-    }
+      const params = {} as ParamsFood;
 
+      if (selectedCategory) {
+        params.category_like = selectedCategory;
+      }
+
+      if (searchValue) {
+        params.name_like = searchValue;
+      }
+
+      const response = await api.get<Food[]>('foods', { params });
+      setFoods(
+        response.data.map(food => ({
+          ...food,
+          formattedPrice: formatValue(food.price),
+        })),
+      );
+    }
     loadFoods();
   }, [selectedCategory, searchValue]);
 
   useEffect(() => {
     async function loadCategories(): Promise<void> {
-      // Load categories from API
+      const response = await api.get<Category[]>('categories');
+
+      setCategories(response.data);
     }
 
     loadCategories();
   }, []);
 
   function handleSelectCategory(id: number): void {
-    // Select / deselect category
+    if (selectedCategory === id) {
+      setSelectedCategory(undefined);
+    } else {
+      setSearchValue('');
+      setSelectedCategory(id);
+    }
   }
 
   return (
@@ -85,7 +112,7 @@ const Dashboard: React.FC = () => {
           name="log-out"
           size={24}
           color="#FFB84D"
-          onPress={() => navigation.navigate('Home')}
+          onPress={() => navigate('Home')}
         />
       </Header>
       <FilterContainer>
